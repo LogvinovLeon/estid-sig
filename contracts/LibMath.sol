@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 library LibMath {
     
     function mul512(uint256 a, uint256 b)
-        public pure
+        internal pure
         returns (uint256, uint256) {
         uint256 hi;
         uint256 lo;
@@ -17,8 +17,8 @@ library LibMath {
     
     function sqr384(
         uint256 ahi, uint256 alo)
-        public view
-        returns (uint256 r2, uint256 r1, uint256 r0) // Result
+        internal view
+        returns (uint256 r3, uint256 r2, uint256 r1, uint256 r0) // Result
     {
         assembly {
             let o := mload(0x40)
@@ -41,10 +41,10 @@ library LibMath {
         }
     }
     
-    function mod768x512(
-        uint256 a2, uint256 a1, uint256 a0,
+    function mod1024x512(
+        uint256 a3, uint256 a2, uint256 a1, uint256 a0,
         uint256 mhi, uint256 mlo)
-        public view
+        internal view
         returns (uint256 hi, uint256 lo) // Result
     {
         assembly {
@@ -71,7 +71,7 @@ library LibMath {
         uint256 bhi, uint256 blo, // Base
         uint256 mhi, uint256 mlo  // Modulus
     )
-        public view
+        internal view
         returns (uint256 hi, uint256 lo) // Result
     {
         // TODO: limit to 384 bits (48 bytes)
@@ -99,7 +99,7 @@ library LibMath {
         uint256 ehi, uint256 elo, // Exponent
         uint256 mhi, uint256 mlo  // Modulus
     )
-        public view
+        internal view
         returns (uint256 hi, uint256 lo) // Result
     {
         // TODO: limit to 384 bits (48 bytes)

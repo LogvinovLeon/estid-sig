@@ -22,7 +22,8 @@ contract Wallet is Curve384 {
         require(verifySignature(hash, rhi, rlo, shi, slo), "INVALID_SIGNATURE");
         receiver.transfer(value);
     }
-    function verifySignature(bytes32 hash, uint256 rhi, uint256 rlo, uint256 shi, uint256 slo) public pure returns (bool) {
+    
+    function verifySignature(bytes32 hash, uint256 rhi, uint256 rlo, uint256 shi, uint256 slo) public view returns (bool) {
         C384Elm memory pub = C384Elm({
             xhi: Pxhi,
             xlo: Pxlo,

@@ -1,10 +1,9 @@
 pragma solidity 0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "./LibMath.sol";
 
 // Field modulo the NIST-P384 / secp384r1 prime
-library FieldP384 {
+contract FieldP384 {
         
     // Field order prime number p
     uint256 constant phi = 0xffffffffffffffffffffffffffffffff;
@@ -48,7 +47,7 @@ library FieldP384 {
         assembly {
             hi := sub(ahi, bhi)
             lo := sub(alo, blo)
-            hi := sub(hi, gt(blo, ahi))
+            hi := sub(hi, gt(lo, alo))
         }
         
         // Reduce mod prime
@@ -57,7 +56,7 @@ library FieldP384 {
             assembly {
                 hi := add(hi, 0xffffffffffffffffffffffffffffffff)
                 lo := add(lo, 0xfffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff)
-                hi := add(hi, lt(0xfffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff, lo))
+                hi := add(hi, lt(lo, 0xfffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff))
             }
         }
     }
@@ -80,13 +79,18 @@ library FieldP384 {
         returns (uint256 hi, uint256 lo)
     {
         // 337 865 gas
+        
         if (bhi > ahi || (bhi == ahi && blo > alo)) {
             (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
         }
         
+        assert(ahi <= phi);
+        assert(bhi <= phi);
+        
         // Use EIP 198 and the identity
         // a * b = ((a + b)**2 - (a - b)**2) / 4.
         
+        uint256 s3;
         uint256 s2;
         uint256 s1;
         uint256 s0;
@@ -94,9 +98,9 @@ library FieldP384 {
             s0 := add(alo, blo)
             s1 := add(add(ahi, bhi), lt(s0, alo))
         }
-        // TODO: No need to modular reduce here
         
         // d = a - b  (no need to reduce)
+        uint256 d3;
         uint256 d2;
         uint256 d1;
         uint256 d0;
@@ -105,15 +109,19 @@ library FieldP384 {
             d1 := sub(sub(ahi, bhi), gt(d0, alo))
         }
         
+        assert(s1 < 2**128);
+        assert(d1 <= phi);
+        
         // Square s and d
-        (s2, s1, s0) = LibMath.sqr384(s1, s0);
-        (d2, d1, d0) = LibMath.sqr384(d1, d0);
+        (s3, s2, s1, s0) = LibMath.sqr384(s1, s0);
+        (d3, d2, d1, d0) = LibMath.sqr384(d1, d0);
         
         // Subtract d from s
         assembly {
             d0 := sub(s0, d0)
             d1 := sub(sub(s1, d1), gt(d0, s0))
             d2 := sub(sub(s2, d2), gt(d1, s1))
+            d3 := sub(sub(s3, d3), gt(d2, s2))
         }
         
         // Divide by four
@@ -123,10 +131,12 @@ library FieldP384 {
             d1 := div(d1, 4)
             d1 := or(d1, mul(d2, 0x4000000000000000000000000000000000000000000000000000000000000000))
             d2 := div(d2, 4)
+            d2 := or(d2, mul(d3, 0x4000000000000000000000000000000000000000000000000000000000000000))
+            d3 := div(d3, 4)
         }
         
         // Reduce modulo p
-        (hi, lo) = LibMath.mod768x512(d2, d1, d0, phi, plo);
+        (hi, lo) = LibMath.mod1024x512(d3, d2, d1, d0, phi, plo);
     }
     
     // In place inversion: a' = 1 / a (mod p)

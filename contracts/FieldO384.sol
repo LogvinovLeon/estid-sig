@@ -1,10 +1,9 @@
 pragma solidity 0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "./LibMath.sol";
 
 // Field modulo the NIST-P384 / secp384r1 generator order
-library FieldO384 {
+contract FieldO384 {
       
     // Generator order prime number o
     uint256 constant ohi = 0xffffffffffffffffffffffffffffffff;
@@ -75,6 +74,7 @@ library FieldO384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
+        /*
         if (bhi > ahi || (bhi == ahi && blo > alo)) {
             (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
         }
@@ -122,6 +122,7 @@ library FieldO384 {
         
         // Reduce modulo p
         (hi, lo) = LibMath.mod768x512(d2, d1, d0, ohi, olo);
+        */
     }
     
     // In place inversion: a' = 1 / a (mod p)
