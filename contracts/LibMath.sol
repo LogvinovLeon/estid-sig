@@ -41,8 +41,8 @@ library LibMath {
         }
     }
     
-    function mod1024x512(
-        uint256 a3, uint256 a2, uint256 a1, uint256 a0,
+    function mod768x512(
+        uint256 a2, uint256 a1, uint256 a0,
         uint256 mhi, uint256 mlo)
         internal view
         returns (uint256 hi, uint256 lo) // Result

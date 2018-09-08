@@ -80,63 +80,12 @@ contract FieldP384 {
     {
         // 337 865 gas
         
-        if (bhi > ahi || (bhi == ahi && blo > alo)) {
-            (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
-        }
+        uint256 
         
-        assert(ahi <= phi);
-        assert(bhi <= phi);
-        
-        // Use EIP 198 and the identity
-        // a * b = ((a + b)**2 - (a - b)**2) / 4.
-        
-        uint256 s3;
-        uint256 s2;
-        uint256 s1;
-        uint256 s0;
-        assembly {
-            s0 := add(alo, blo)
-            s1 := add(add(ahi, bhi), lt(s0, alo))
-        }
-        
-        // d = a - b  (no need to reduce)
-        uint256 d3;
-        uint256 d2;
-        uint256 d1;
-        uint256 d0;
-        assembly {
-            d0 := sub(alo, blo)
-            d1 := sub(sub(ahi, bhi), gt(d0, alo))
-        }
-        
-        assert(s1 < 2**128);
-        assert(d1 <= phi);
-        
-        // Square s and d
-        (s3, s2, s1, s0) = LibMath.sqr384(s1, s0);
-        (d3, d2, d1, d0) = LibMath.sqr384(d1, d0);
-        
-        // Subtract d from s
-        assembly {
-            d0 := sub(s0, d0)
-            d1 := sub(sub(s1, d1), gt(d0, s0))
-            d2 := sub(sub(s2, d2), gt(d1, s1))
-            d3 := sub(sub(s3, d3), gt(d2, s2))
-        }
-        
-        // Divide by four
-        assembly {
-            d0 := div(d0, 4)
-            d0 := or(d0, mul(d1, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            d1 := div(d1, 4)
-            d1 := or(d1, mul(d2, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            d2 := div(d2, 4)
-            d2 := or(d2, mul(d3, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            d3 := div(d3, 4)
-        }
+        uint256 hihi = ahi * ahi; // 128 x 128 bit
         
         // Reduce modulo p
-        (hi, lo) = LibMath.mod1024x512(d3, d2, d1, d0, phi, plo);
+        (hi, lo) = LibMath.mod768x512(d2, d1, d0, phi, plo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
