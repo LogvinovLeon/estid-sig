@@ -69,7 +69,7 @@ contract FieldP384 {
         // 57 600 gas
         
         // Square s and d
-        (hi, lo) = LibMath.sqrmod512(ahi, alo, phi, plo);
+        (hi, lo) = LibMath.sqrmod384(ahi, alo, phi, plo);
     }
     
     function fmul(
@@ -86,6 +86,7 @@ contract FieldP384 {
         (r1, r0) = LibMath.mul512(alo, blo);
         r2 = ahi * bhi;
         
+        uint256 t0;
         uint256 t1;
         uint256 t2;
         (t2, t1) = LibMath.mul512(alo, bhi);
@@ -103,7 +104,7 @@ contract FieldP384 {
         }
         
         // Reduce modulo p
-        (hi, lo) = LibMath.mod768x512(r2, r1, r0, phi, plo);
+        (hi, lo) = LibMath.mod768x384(r2, r1, r0, phi, plo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
@@ -118,7 +119,7 @@ contract FieldP384 {
         // the Fermat-Euler-Carmichael theorem.
         // We need to raise to the power p - 2.
         // See https://eips.ethereum.org/EIPS/eip-198
-        (hi, lo) = LibMath.powmod512(
+        (hi, lo) = LibMath.powmod384(
             ahi, alo, // Base
             chi, clo, // Exponent
             phi, plo  // Modulus

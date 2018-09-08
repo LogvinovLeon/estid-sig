@@ -65,7 +65,7 @@ contract FieldO384 {
         returns (uint256 hi, uint256 lo)
     {
         // Square s and d
-        (hi, lo) = LibMath.sqrmod512(ahi, alo, ohi, olo);
+        (hi, lo) = LibMath.sqrmod384(ahi, alo, ohi, olo);
     }
     
     function omul(
@@ -74,55 +74,32 @@ contract FieldO384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
-        /*
-        if (bhi > ahi || (bhi == ahi && blo > alo)) {
-            (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
+        // 122 141 gas
+        uint256 r0;
+        uint256 r1;
+        uint256 r2;
+        
+        (r1, r0) = LibMath.mul512(alo, blo);
+        r2 = ahi * bhi;
+        
+        uint256 t1;
+        uint256 t2;
+        (t2, t1) = LibMath.mul512(alo, bhi);
+        assembly {
+            r1 := add(r1, t1)
+            r2 := add(r2, t2)
+            r2 := add(r2, lt(r1, t1))
         }
         
-        // Use EIP 198 and the identity
-        // a * b = ((a + b)**2 - (a - b)**2) / 4.
-        
-        uint256 s2;
-        uint256 s1;
-        uint256 s0;
+        (t2, t1) = LibMath.mul512(ahi, blo);
         assembly {
-            s0 := add(alo, blo)
-            s1 := add(add(ahi, bhi), lt(s0, alo))
-        }
-        // TODO: No need to modular reduce here
-        
-        // d = a - b  (no need to reduce)
-        uint256 d2;
-        uint256 d1;
-        uint256 d0;
-        assembly {
-            d0 := sub(alo, blo)
-            d1 := sub(sub(ahi, bhi), gt(d0, alo))
-        }
-        
-        // Square s and d
-        (s2, s1, s0) = LibMath.sqr384(s1, s0);
-        (d2, d1, d0) = LibMath.sqr384(d1, d0);
-        
-        // Subtract d from s
-        assembly {
-            d0 := sub(s0, d0)
-            d1 := sub(sub(s1, d1), gt(d0, s0))
-            d2 := sub(sub(s2, d2), gt(d1, s1))
-        }
-        
-        // Divide by four
-        assembly {
-            d0 := div(d0, 4)
-            d0 := or(d0, mul(d1, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            d1 := div(d1, 4)
-            d1 := or(d1, mul(d2, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            d2 := div(d2, 4)
+            r1 := add(r1, t1)
+            r2 := add(r2, t2)
+            r2 := add(r2, lt(r1, t1))
         }
         
         // Reduce modulo p
-        (hi, lo) = LibMath.mod768x512(d2, d1, d0, ohi, olo);
-        */
+        (hi, lo) = LibMath.mod768x384(r2, r1, r0, ohi, olo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
@@ -135,7 +112,7 @@ contract FieldO384 {
         // the Fermat-Euler-Carmichael theorem.
         // We need to raise to the power p - 2.
         // See https://eips.ethereum.org/EIPS/eip-198
-        (hi, lo) = LibMath.powmod512(
+        (hi, lo) = LibMath.powmod384(
             ahi, alo, // Base
             ochi, oclo, // Exponent
             ohi, olo  // Modulus

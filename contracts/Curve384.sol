@@ -82,20 +82,12 @@ contract Curve384 is FieldP384, FieldO384 {
         
         // l = (3 * ax * ax + ca) / (2 * ay)
         (lhi, llo) = fmul(0, 3, a.xhi, a.xlo);
-        assert(lhi == 0x58df4b4c45b7d92e15838cc2ec62e63d);
-        assert(llo == 0x26a7a65903a36031844d06d753766895e2ebf62f2d593d88f797f25a39a72c98);
         (lhi, llo) = fmul(lhi, llo, a.xhi, a.xlo);
-        assert(lhi == 0x858564b53562cbd97f41a5389d7e6673);
-        //assert(llo == 0x41d0469bbe77677a1ec703fcfcf7fe3f1d0c7b85bf517be09e3b5d480678f3be);
         (lhi, llo) = fadd(lhi, llo, cahi, calo);
-        //assert(lhi == 0x858564b53562cbd97f41a5389d7e6673);
-        //assert(llo == 0x41d0469bbe77677a1ec703fcfcf7fe3f1d0c7b85bf517be09e3b5d480678f3bb);
         
         (thi, tlo) = fadd(a.yhi, a.ylo, a.yhi, a.ylo);
         (thi, tlo) = finv(thi, tlo);
         (lhi, llo) = fmul(lhi, llo, thi, tlo);
-        //assert(lhi == 0x4ed91c646ad73f1958670637a9abcd3);
-        //assert(llo == 0x86e4dddca2a48afe653c9dad956b93d854a81573859dc0f95f7925a39380545e);
         
         // x = l * l - ax - ax
         (thi, tlo) = fsqr(lhi, llo);
@@ -171,6 +163,115 @@ contract Curve384 is FieldP384, FieldO384 {
         cmul(pub, vhi, vlo);
         cadd(g, pub);
         return g.xhi == rhi && g.xlo == rlo;
+    }
+    
+    C384Elm[384] generatorTable;
+    C384Elm[384] pubkeyTable;
+    
+    function precomputeGen()
+        public
+    {
+        C384Elm memory g = C384Elm({
+            xhi: gxhi,
+            xlo: gxlo,
+            yhi: gyhi,
+            ylo: gylo
+        });
+        for(uint256 i = 0; i < 383; i++) {
+            generatorTable[i] = g;
+            cdbl(g);
+        }
+        generatorTable[383] = g;
+    }
+    
+    function precomputePub(
+        uint256 xhi, uint256 xlo,
+        uint256 yhi, uint256 ylo)
+        public
+    {
+        C384Elm memory p = C384Elm({
+            xhi: xhi,
+            xlo: xlo,
+            yhi: yhi,
+            ylo: ylo
+        });
+        for(uint256 i = 0; i < 383; i++) {
+            pubkeyTable[i] = p;
+            cdbl(p);
+        }
+        pubkeyTable[383] = p;
+    }
+    
+    function cmulgen(C384Elm memory r, uint256 rhi, uint256 rlo)
+        internal view
+    {
+        bool running = false;
+        uint256 i = 0;
+        while(rhi != 0 || rlo != 0) {
+            if (rlo & 1 == 1) {
+                if (running) {
+                    cadd(r, generatorTable[i]);
+                } else {
+                    cset(r, generatorTable[i]);
+                    running = true;
+                }
+            }
+            i++;
+            
+            // r >>= 2
+            assembly {
+                rlo := div(rlo, 2)
+                rlo := or(rlo, mul(rhi, 0x8000000000000000000000000000000000000000000000000000000000000000))
+                rhi := div(rhi, 2)
+            }
+        }
+    }
+    
+    function cmulpub(C384Elm memory r, uint256 rhi, uint256 rlo)
+        internal view
+    {
+        bool running = false;
+        uint256 i = 0;
+        while(rhi != 0 || rlo != 0) {
+            if (rlo & 1 == 1) {
+                if (running) {
+                    cadd(r, pubkeyTable[i]);
+                } else {
+                    cset(r, pubkeyTable[i]);
+                    running = true;
+                }
+            }
+            i++;
+            
+            // r >>= 2
+            assembly {
+                rlo := div(rlo, 2)
+                rlo := or(rlo, mul(rhi, 0x8000000000000000000000000000000000000000000000000000000000000000))
+                rhi := div(rhi, 2)
+            }
+        }
+    }
+    
+    function verify_fast(
+        uint256 m,
+        uint256 rhi, uint256 rlo,
+        uint256 shi, uint256 slo)
+        internal view
+        returns (bool)
+    {
+        uint256 uhi;
+        uint256 ulo;
+        uint256 vhi;
+        uint256 vlo;
+        (shi, slo) = oinv(shi, slo);
+        (uhi, ulo) = omul(0, m, shi, slo);
+        (vhi, vlo) = omul(rhi, rlo, shi, slo);
+        C384Elm memory gen;
+        C384Elm memory pub;
+        cmulgen(gen, uhi, ulo);
+        cmulpub(pub, vhi, vlo);
+        cadd(gen, pub);
+        return gen.xhi == rhi && gen.xlo == rlo;
     }
     
     function double(
@@ -285,12 +386,11 @@ contract Curve384 is FieldP384, FieldO384 {
             ylo:0x2c538d7878e63e8da0603396b4cbd9494d42f691141f9e2e5927cf88aac0c63
         });
         cdbl(a);
-        //assert(a.xhi == 0x17136874b0f7adaaf3c5a9fac85c689e);
-        //assert(a.xlo == 0x3bbae87a0d2e974e226bcbc8007df64e584769a9fbb8ddcb1a0ae09e90a043c3);
-        //assert(a.yhi == 0xff058ae937fa8b0be1479de0629f1a10);
-        //assert(a.ylo == 0x9af355e0dc60f1416906e178f0174517a4d330f7aa1176ffcbd8a47f226f8a10);
+        assert(a.xhi == 0x17136874b0f7adaaf3c5a9fac85c689e);
+        assert(a.xlo == 0x3bbae87a0d2e974e226bcbc8007df64e584769a9fbb8ddcb1a0ae09e90a043c3);
+        assert(a.yhi == 0xff058ae937fa8b0be1479de0629f1a10);
+        assert(a.ylo == 0x9af355e0dc60f1416906e178f0174517a4d330f7aa1176ffcbd8a47f226f8a10);
     }
-
     
     function test_cmul()
     {
@@ -307,5 +407,52 @@ contract Curve384 is FieldP384, FieldO384 {
         assert(a.xlo == 0x135fa346d9706879ce0cba91105172106df49ea8d38529cbbce95a776491e482);
         assert(a.yhi == 0x376ea46200e2a971cfd1b26798bd5ef6);
         assert(a.ylo == 0x95f9eb9240e1ec929ee71a46ae57b52e60d75640646df19053d997896807c78d);
+    }
+    
+    function test_verify()
+    {
+        C384Elm memory a = C384Elm({
+            xhi:0xc84a6e6ec1e7f30f5c812eeba420f769,
+            xlo:0xb78d377301367565d6c4579d1bd222dbf64ea76464731482fd32a61ebde26432,
+            yhi:0xd0d9d4f899b00456516b647c5e9b7ed,
+            ylo:0x2c538d7878e63e8da0603396b4cbd9494d42f691141f9e2e5927cf88aac0c63
+        });
+        uint256 m = 0x413140d54372f9baf481d4c54e2d5c7bcf28fd6087000280e07976121dd54af2;
+        uint256 rhi = 0xeeb9131427fd0f0b7195733c60dd8a99;
+        uint256 rlo = 0x822e6250b731e570244afe1053226cc83bcfb2a4280b6f2a81f2a723f62a457e;
+        uint256 shi = 0xee281a7e5d0ea6a14e00c1759f79fddb;
+        uint256 slo = 0xd91f3994cae97f886b1f2615c6a51839f13e1b21becd3d21accaccaceed2725f;
+        
+        bool result = verify(a, m, rhi, rlo, shi, slo);
+        assert(result == true);
+    }
+
+    function test_verify_neg()
+    {
+        C384Elm memory a = C384Elm({
+            xhi:0xc84a6e6ec1e7f30f5c812eeba420f769,
+            xlo:0xb78d377301367565d6c4579d1bd222dbf64ea76464731482fd32a61ebde26432,
+            yhi:0xd0d9d4f899b00456516b647c5e9b7ed,
+            ylo:0x2c538d7878e63e8da0603396b4cbd9494d42f691141f9e2e5927cf88aac0c63
+        });
+        uint256 m = 0x413140d54372f9baf481d4c54e2d5c7bcf28fd6087000280e07976121dd54af2;
+        uint256 rhi = 0xeeb9131427fd0f0b7195733c60dd8a99;
+        uint256 rlo = 0x822e6250b731e570244afe1053226cc83bcfb2a4280b6f2a81f2a723f62a457e;
+        uint256 shi = 0xee281a7e5d0ea6a14e00c1759f79fddb;
+        uint256 slo = 0xd91f3994cae97f886b1f2615c6a51839f13e1b21becd3d21accaccaceed2725f;
+        
+        bool result = verify(a, m, shi, slo, rhi, rlo);
+        assert(result == false);
+    }
+
+    function test_verify_fast()
+    {
+        uint256 m = 0x413140d54372f9baf481d4c54e2d5c7bcf28fd6087000280e07976121dd54af2;
+        uint256 rhi = 0xeeb9131427fd0f0b7195733c60dd8a99;
+        uint256 rlo = 0x822e6250b731e570244afe1053226cc83bcfb2a4280b6f2a81f2a723f62a457e;
+        uint256 shi = 0xee281a7e5d0ea6a14e00c1759f79fddb;
+        uint256 slo = 0xd91f3994cae97f886b1f2615c6a51839f13e1b21becd3d21accaccaceed2725f;
+        bool result = verify_fast(m, rhi, rlo, shi, slo);
+        assert(result == true);
     }
 }

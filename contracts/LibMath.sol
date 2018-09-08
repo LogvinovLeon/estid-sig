@@ -41,7 +41,7 @@ library LibMath {
         }
     }
     
-    function mod768x512(
+    function mod768x384(
         uint256 a2, uint256 a1, uint256 a0,
         uint256 mhi, uint256 mlo)
         internal view
@@ -50,24 +50,24 @@ library LibMath {
         assembly {
             let o := mload(0x40)
             mstore(add(o, 0x000), 0x60) // Length of base
-            mstore(add(o, 0x020), 0x40) // Length of exponent
-            mstore(add(o, 0x040), 0x40) // Length of modulus
+            mstore(add(o, 0x020), 0x01) // Length of exponent
+            mstore(add(o, 0x040), 0x30) // Length of modulus
             mstore(add(o, 0x060), a2) // Base
             mstore(add(o, 0x080), a1)
             mstore(add(o, 0x0A0), a0)
-            mstore(add(o, 0x0C0), 0) // Exponent
-            mstore(add(o, 0x0E0), 1)
-            mstore(add(o, 0x100), mhi) // Modulus
-            mstore(add(o, 0x120), mlo)
+            mstore8(add(o, 0x0C0), 1) // Exponent
+            mstore(add(o, 0x0C1), mul(mhi, 0x100000000000000000000000000000000)) // Modulus
+            mstore(add(o, 0x0D1), mlo)
             
-            let result := staticcall(gas, 0x5, o, 0x140, o, 0x40)
+            let result := staticcall(gas, 0x5, o, 0xF1, o, 0x30)
             
-            hi := mload(add(o, 0x000)) // Result
-            lo := mload(add(o, 0x020)) // Result
+            hi := mload(sub(o, 0x010)) // Result
+            hi := and(hi, 0xffffffffffffffffffffffffffffffff)
+            lo := mload(add(o, 0x010)) // Result
         }
     }
     
-    function sqrmod512(
+    function sqrmod384(
         uint256 bhi, uint256 blo, // Base
         uint256 mhi, uint256 mlo  // Modulus
     )
@@ -77,24 +77,24 @@ library LibMath {
         // TODO: limit to 384 bits (48 bytes)
         assembly {
             let o := mload(0x40)
-            mstore(add(o, 0x000), 0x40) // Length of base
-            mstore(add(o, 0x020), 0x40) // Length of exponent
-            mstore(add(o, 0x040), 0x40) // Length of modulus
-            mstore(add(o, 0x060), bhi) // Base
-            mstore(add(o, 0x080), blo)
-            mstore(add(o, 0x0A0), 0) // Exponent
-            mstore(add(o, 0x0C0), 2)
-            mstore(add(o, 0x0E0), mhi) // Modulus
-            mstore(add(o, 0x100), mlo)
+            mstore(add(o, 0x000), 0x30) // Length of base
+            mstore(add(o, 0x020), 0x01) // Length of exponent
+            mstore(add(o, 0x040), 0x30) // Length of modulus
+            mstore(add(o, 0x060), mul(bhi, 0x100000000000000000000000000000000)) // Base
+            mstore(add(o, 0x070), blo)
+            mstore8(add(o, 0x090), 2)
+            mstore(add(o, 0x091), mul(mhi, 0x100000000000000000000000000000000)) // Modulus
+            mstore(add(o, 0x0A1), mlo)
             
-            let result := staticcall(gas, 0x5, o, 0x120, o, 0x40)
+            let result := staticcall(gas, 0x5, o, 0x0C1, o, 0x30)
             
-            hi := mload(add(o, 0x000)) // Result
-            lo := mload(add(o, 0x020)) // Result
+            hi := mload(sub(o, 0x010)) // Result
+            hi := and(hi, 0xffffffffffffffffffffffffffffffff)
+            lo := mload(add(o, 0x010)) // Result
         }
     }
     
-    function powmod512(
+    function powmod384(
         uint256 bhi, uint256 blo, // Base
         uint256 ehi, uint256 elo, // Exponent
         uint256 mhi, uint256 mlo  // Modulus
@@ -105,20 +105,21 @@ library LibMath {
         // TODO: limit to 384 bits (48 bytes)
         assembly {
             let o := mload(0x40)
-            mstore(add(o, 0x000), 0x40) // Length of base
-            mstore(add(o, 0x020), 0x40) // Length of exponent
-            mstore(add(o, 0x040), 0x40) // Length of modulus
-            mstore(add(o, 0x060), bhi) // Base
-            mstore(add(o, 0x080), blo)
-            mstore(add(o, 0x0A0), ehi) // Exponent
-            mstore(add(o, 0x0C0), elo)
-            mstore(add(o, 0x0E0), mhi) // Modulus
-            mstore(add(o, 0x100), mlo)
+            mstore(add(o, 0x000), 0x30) // Length of base
+            mstore(add(o, 0x020), 0x30) // Length of exponent
+            mstore(add(o, 0x040), 0x30) // Length of modulus
+            mstore(add(o, 0x060), mul(bhi, 0x100000000000000000000000000000000)) // Base
+            mstore(add(o, 0x070), blo)
+            mstore(add(o, 0x090), mul(ehi, 0x100000000000000000000000000000000)) // Exponent
+            mstore(add(o, 0x0A0), elo)
+            mstore(add(o, 0x0C0), mul(mhi, 0x100000000000000000000000000000000)) // Modulus
+            mstore(add(o, 0x0D0), mlo)
             
-            let result := staticcall(gas, 0x5, o, 0x120, o, 0x40)
+            let result := staticcall(gas, 0x5, o, 0x0F0, o, 0x30)
             
-            hi := mload(add(o, 0x000)) // Result
-            lo := mload(add(o, 0x020)) // Result
+            hi := mload(sub(o, 0x010)) // Result
+            hi := and(hi, 0xffffffffffffffffffffffffffffffff)
+            lo := mload(add(o, 0x010)) // Result
         }
     }
     
