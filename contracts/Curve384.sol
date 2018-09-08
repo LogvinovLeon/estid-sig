@@ -71,6 +71,8 @@ contract Curve384 is FieldP384, FieldO384 {
     function cdbl(C384Elm memory a)
         public view
     {
+        // 1 490 576 gas
+        
         uint256 lhi;
         uint256 llo;
         uint256 thi;
@@ -159,5 +161,14 @@ contract Curve384 is FieldP384, FieldO384 {
         cmul(pub, vhi, vlo);
         cadd(g, pub);
         return g.xhi == rhi && g.xlo == rlo;
+    }
+    
+    function double(
+        C384Elm a)
+        public view
+        returns (C384Elm)
+    {
+        cdbl(a);
+        return a;
     }
 }

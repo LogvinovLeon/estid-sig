@@ -20,6 +20,7 @@ library FieldP384 {
         public pure
         returns (uint256 hi, uint256 lo)
     {
+        // 1259 gas
         assembly {
             hi := add(ahi, bhi)
             lo := add(alo, blo)
@@ -43,6 +44,7 @@ library FieldP384 {
         public pure
         returns (uint256 hi, uint256 lo)
     {
+        // 
         assembly {
             hi := sub(ahi, bhi)
             lo := sub(alo, blo)
@@ -65,6 +67,8 @@ library FieldP384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
+        // 57 600 gas
+        
         // Square s and d
         (hi, lo) = LibMath.sqrmod512(ahi, alo, phi, plo);
     }
@@ -75,6 +79,7 @@ library FieldP384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
+        // 337 865 gas
         if (bhi > ahi || (bhi == ahi && blo > alo)) {
             (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
         }
@@ -130,6 +135,8 @@ library FieldP384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
+        // 83 727 gas
+        
         // Use EIP 198 Big integer modular exponentiation precompile and
         // the Fermat-Euler-Carmichael theorem.
         // We need to raise to the power p - 2.
