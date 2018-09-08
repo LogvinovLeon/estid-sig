@@ -75,38 +75,54 @@ library FieldP384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
+        if (bhi > ahi || (bhi == ahi && blo > alo)) {
+            (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
+        }
+        
         // Use EIP 198 and the identity
         // a * b = ((a + b)**2 - (a - b)**2) / 4.
         
-        uint256 shi;
-        uint256 slo;
-        (shi, slo) = fadd(ahi, alo, bhi, blo);
+        uint256 s2;
+        uint256 s1;
+        uint256 s0;
+        assembly {
+            s0 := add(alo, blo)
+            s1 := add(add(ahi, bhi), lt(s0, alo))
+        }
         // TODO: No need to modular reduce here
         
         // d = a - b  (no need to reduce)
-        uint256 dhi;
-        uint256 dlo;
-        (dhi, dlo) = fsub(ahi, alo, bhi, blo);
+        uint256 d2;
+        uint256 d1;
+        uint256 d0;
+        assembly {
+            d0 := sub(alo, blo)
+            d1 := sub(sub(ahi, bhi), gt(d0, alo))
+        }
+        (d1, d0) = fsub(ahi, alo, bhi, blo);
         
         // Square s and d
-        (shi, slo) = LibMath.sqrmod512(shi, slo, phi, plo);
-        (dhi, dlo) = LibMath.sqrmod512(dhi, dlo, phi, plo);
+        (s2, s1, s0) = LibMath.sqr384(s1, s0);
+        (d2, d1, d0) = LibMath.sqr384(d1, d0);
         
         // Subtract d from s
-        (shi, slo) = fsub(shi, slo, dhi, slo);
-        // TODO: Is it ok that we reduce here?
+        assembly {
+            d0 := sub(s0, d0)
+            d1 := sub(sub(s1, d1), gt(d0, s0))
+            d2 := sub(sub(s2, d2), gt(d1, s1))
+        }
         
         // Divide by four
         assembly {
-            slo := div(slo, 4)
-            slo := or(slo, mul(shi, 0x4000000000000000000000000000000000000000000000000000000000000000))
-            shi := div(shi, 4)
+            d0 := div(d0, 4)
+            d0 := or(d0, mul(d1, 0x4000000000000000000000000000000000000000000000000000000000000000))
+            d1 := div(d1, 4)
+            d1 := or(d1, mul(d2, 0x4000000000000000000000000000000000000000000000000000000000000000))
+            d2 := div(d2, 4)
         }
         
-        // TODO: Is one round enough?
-        
-        hi = shi;
-        lo = slo;
+        // Reduce modulo p
+        (hi, lo) = LibMath.mod768x512(d2, d1, d0, phi, plo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
