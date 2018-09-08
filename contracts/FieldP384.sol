@@ -99,7 +99,6 @@ library FieldP384 {
             d0 := sub(alo, blo)
             d1 := sub(sub(ahi, bhi), gt(d0, alo))
         }
-        (d1, d0) = fsub(ahi, alo, bhi, blo);
         
         // Square s and d
         (s2, s1, s0) = LibMath.sqr384(s1, s0);

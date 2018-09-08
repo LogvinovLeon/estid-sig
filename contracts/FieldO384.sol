@@ -5,84 +5,44 @@ import './LibMath.sol';
 
 // Field modulo the NIST-P384 / secp384r1 generator order
 library FieldO384 {
-    
-    using LibMath;
-  
-    // Field order prime number p
-    uint256 constant phi = 0xffffffffffffffffffffffffffffffff;
-    uint256 constant plo = 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973;
+      
+    // Generator order prime number o
+    uint256 constant ohi = 0xffffffffffffffffffffffffffffffff;
+    uint256 constant olo = 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973;
 
-    // Carmichael number of p
-    uint256 constant chi = 0xffffffffffffffffffffffffffffffff;
-    uint256 constant clo = 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52971;
+    // Carmichael number of o
+    uint256 constant ochi = 0xffffffffffffffffffffffffffffffff;
+    uint256 constant oclo = 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52971;
     
-    function copy(O384Elm memory a) returns (O384Elm) {
-        return O384Elm({hi: a.hi, lo: a.lo});
-    }
-    
-    function eq(O384Elm memory a, O384Elm memory b) returns (bool) {
-        return a.hi == b.hi && a.lo == b.lo;
-    }
-    
-    // In place negation: a' = -a (mod p)
-    function neg(O384Elm memory a) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        uint256 hi;
-        uint256 lo;
-        
+    function oadd(
+        uint256 ahi, uint256 alo,
+        uint256 bhi, uint256 blo)
+        public pure
+        returns (uint256 hi, uint256 lo)
+    {
         assembly {
-            hi := sub(phi, ahi)
-            lo := sub(plo, alo)
-            hi := sub(hi, gt(alo, plo))
-        }
-
-        // Store in a
-        a.hi = hi;
-        a.lo = lo;
-    }
-    
-    // In place addition: a' = a + b (mod p)
-    function add(O384Elm memory a, O384Elm memory b) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        uint256 bhi = b.hi;
-        uint256 blo = b.lo;
-        
-        // 512 bit add
-        uint256 lo = alo + blo;
-        uint256 hi = ahi + bhi;
-        assembly {
-            // Carry
+            hi := add(ahi, bhi)
+            lo := add(alo, blo)
             hi := add(hi, lt(lo, alo))
         }
         
         // Reduce mod prime
-        if (hi > phi || (hi == phi && lo >= plo)) {
+        if (hi > ohi || (hi == ohi && lo >= olo)) {
             // Subtract prime
             assembly {
-                hi := sub(hi, gt(plo, lo))
-                hi := sub(hi, phi)
-                lo := sub(lo, plo)
+                hi := sub(hi, gt(0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973, lo))
+                hi := sub(hi, 0xffffffffffffffffffffffffffffffff)
+                lo := sub(lo, 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973)
             }
         }
-        
-        // Store in a
-        a.hi = hi;
-        a.lo = lo;
     }
     
-    // In place subtraction: a' = a - b (mod p)
-    function sub(O384Elm memory a, O384Elm memory b) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        uint256 bhi = b.hi;
-        uint256 blo = b.lo;
-        uint256 hi;
-        uint256 lo;
+    function osub(
+        uint256 ahi, uint256 alo,
+        uint256 bhi, uint256 blo)
+        public pure
+        returns (uint256 hi, uint256 lo)
+    {
         assembly {
             hi := sub(ahi, bhi)
             lo := sub(alo, blo)
@@ -93,124 +53,91 @@ library FieldO384 {
         if (hi > 2**255) {
             // Add prime
             assembly {
-                hi := add(hi, phi)
-                lo := add(lo, plo)
-                hi := add(hi, lt(plo, lo))
+                hi := add(hi, 0xffffffffffffffffffffffffffffffff)
+                lo := add(lo, 0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973)
+                hi := add(hi, lt(0xffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973, lo))
             }
         }
-        
-        // Store in a
-        a.hi = hi;
-        a.lo = lo;
     }
     
-    // In place squaring a' = a * a (mod p)
-    function sqr(O384Elm memory a) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        
+    function osqr(
+        uint256 ahi, uint256 alo)
+        public view
+        returns (uint256 hi, uint256 lo)
+    {
         // Square s and d
-        (ahi, alo) = LibMath.sqrmod512(ahi, alo, phi, plo);
-        
-        // Store in a
-        a.hi = ahi;
-        a.lo = alo;
+        (hi, lo) = LibMath.sqrmod512(ahi, alo, ohi, olo);
     }
     
-    // In place multiplication: a' = a * b (mod p)
-    function mul(O384Elm memory a, O384Elm memory b) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        uint256 bhi = b.hi;
-        uint256 blo = b.lo;
-
+    function omul(
+        uint256 ahi, uint256 alo,
+        uint256 bhi, uint256 blo)
+        public view
+        returns (uint256 hi, uint256 lo)
+    {
+        if (bhi > ahi || (bhi == ahi && blo > alo)) {
+            (ahi, alo, bhi, blo) = (bhi, blo, ahi, alo);
+        }
+        
         // Use EIP 198 and the identity
         // a * b = ((a + b)**2 - (a - b)**2) / 4.
         
-        // s = a + b  (no need to reduce)
-        uint256 shi;
-        uint256 slo;
+        uint256 s2;
+        uint256 s1;
+        uint256 s0;
         assembly {
-            shi := add(ahi, bhi)
-            slo := add(alo, blo)
-            shi := add(shi, lt(slo, alo))
+            s0 := add(alo, blo)
+            s1 := add(add(ahi, bhi), lt(s0, alo))
         }
+        // TODO: No need to modular reduce here
         
         // d = a - b  (no need to reduce)
-        // TODO: make sure a >= b
-        uint256 dhi;
-        uint256 dlo;
+        uint256 d2;
+        uint256 d1;
+        uint256 d0;
         assembly {
-            dhi := sub(ahi, bhi)
-            dlo := sub(alo, blo)
-            dhi := sub(dhi, gt(blo, ahi))
+            d0 := sub(alo, blo)
+            d1 := sub(sub(ahi, bhi), gt(d0, alo))
         }
         
         // Square s and d
-        (shi, slo) = LibMath.sqrmod512(shi, slo, phi, plo);
-        (dhi, dlo) = LibMath.sqrmod512(dhi, dlo, phi, plo);
+        (s2, s1, s0) = LibMath.sqr384(s1, s0);
+        (d2, d1, d0) = LibMath.sqr384(d1, d0);
         
         // Subtract d from s
         assembly {
-            shi := sub(shi, dhi)
-            slo := sub(slo, dlo)
-            shi := sub(shi, gt(dlo, slo))
-        }
-        if (shi > 2**255) {
-            // Add prime
-            assembly {
-                shi := add(shi, phi)
-                slo := add(slo, plo)
-                shi := add(shi, lt(plo, lo))
-            }
+            d0 := sub(s0, d0)
+            d1 := sub(sub(s1, d1), gt(d0, s0))
+            d2 := sub(sub(s2, d2), gt(d1, s1))
         }
         
         // Divide by four
         assembly {
-            slo := div(slo, 4)
-            slo := or(slo, mul(shi, 2**254))
-            shi := div(shi, 4)
+            d0 := div(d0, 4)
+            d0 := or(d0, mul(d1, 0x4000000000000000000000000000000000000000000000000000000000000000))
+            d1 := div(d1, 4)
+            d1 := or(d1, mul(d2, 0x4000000000000000000000000000000000000000000000000000000000000000))
+            d2 := div(d2, 4)
         }
         
-        // Reduce mod prime
-        if (hi > phi || (hi == phi && lo >= plo)) {
-            // Subtract prime
-            assembly {
-                hi := sub(hi, gt(plo, lo))
-                hi := sub(hi, phi)
-                lo := sub(lo, plo)
-            }
-        }
-        // TODO: Is one round enough?
-        
-        // Store in a
-        a.hi = hi;
-        a.lo = lo;
+        // Reduce modulo p
+        (hi, lo) = LibMath.mod768x512(d2, d1, d0, ohi, olo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
-    function inv(O384Elm memory a) {
-        // Read to stack
-        uint256 ahi = a.hi;
-        uint256 alo = a.lo;
-        
+    function oinv(
+        uint256 ahi, uint256 alo)
+        public view
+        returns (uint256 hi, uint256 lo)
+    {
         // Use EIP 198 Big integer modular exponentiation precompile and
         // the Fermat-Euler-Carmichael theorem.
         // We need to raise to the power p - 2.
         // See https://eips.ethereum.org/EIPS/eip-198
-        
-        uint256 hi;
-        uint256 lo;
         (hi, lo) = LibMath.powmod512(
             ahi, alo, // Base
-            chi, clo, // Exponent
-            phi, plo  // Modulus
+            ochi, oclo, // Exponent
+            ohi, olo  // Modulus
         );
-        
-        a.hi = hi;
-        a.lo = lo;
     }
-    
 }
