@@ -217,7 +217,7 @@ contract Curve384 is FieldP384, FieldO384 {
         uint256 xhi = 0xc84a6e6ec1e7f30f5c812eeba420f769;
         uint256 xlo = 0xb78d377301367565d6c4579d1bd222dbf64ea76464731482fd32a61ebde26432;
         uint256 yhi = 0xd0d9d4f899b00456516b647c5e9b7ed;
-        uint256 ylo = 0x2c538d7878e63e8da0603396b4cbd9494d42f691141f9e2e5927cf88aac0c63;
+        uint256 ylo = 0x02c538d7878e63e8da0603396b4cbd9494d42f691141f9e2e5927cf88aac0c63;
 
         uint256 hi;
         uint256 lo;
@@ -238,8 +238,8 @@ contract Curve384 is FieldP384, FieldO384 {
         uint256 lo;
         (hi, lo) = fmul(xhi, xlo, yhi, ylo);
         
-        //assert(hi == 0x858564b53562cbd97f41a5389d7e6673);
-        //assert(lo == 0x41d0469bbe77677a1ec703fcfcf7fe3f1d0c7b85bf517be09e3b5d480678f3be);
+        assert(hi == 0x858564b53562cbd97f41a5389d7e6673);
+        assert(lo == 0x41d0469bbe77677a1ec703fcfcf7fe3f1d0c7b85bf517be09e3b5d480678f3be);
     }
     
     function test_finv()

@@ -79,13 +79,31 @@ contract FieldP384 {
         returns (uint256 hi, uint256 lo)
     {
         // 337 865 gas
+        uint256 r0;
+        uint256 r1;
+        uint256 r2;
         
-        uint256 
+        (r1, r0) = LibMath.mul512(alo, blo);
+        r2 = ahi * bhi;
         
-        uint256 hihi = ahi * ahi; // 128 x 128 bit
+        uint256 t1;
+        uint256 t2;
+        (t2, t1) = LibMath.mul512(alo, bhi);
+        assembly {
+            r1 := add(r1, t1)
+            r2 := add(r2, t2)
+            r2 := add(r2, lt(r1, t1))
+        }
+        
+        (t2, t1) = LibMath.mul512(ahi, blo);
+        assembly {
+            r1 := add(r1, t1)
+            r2 := add(r2, t2)
+            r2 := add(r2, lt(r1, t1))
+        }
         
         // Reduce modulo p
-        (hi, lo) = LibMath.mod768x512(d2, d1, d0, phi, plo);
+        (hi, lo) = LibMath.mod768x512(r2, r1, r0, phi, plo);
     }
     
     // In place inversion: a' = 1 / a (mod p)
