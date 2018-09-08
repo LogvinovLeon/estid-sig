@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "start": "parcel index.html --https"
+  },
+  "dependencies": {
+    "parcel-bundler": "^1.9.7",
+    "truffle": "^5.0.0-beta.0"
+  },
+  "devDependencies": {
+    "typescript": "^3.0.3"
+  }
+}
