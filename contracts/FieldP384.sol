@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 pragma experimental ABIEncoderV2;
 
-import './LibMath.sol';
+import "./LibMath.sol";
 
 // Field modulo the NIST-P384 / secp384r1 prime
 library FieldP384 {

@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 pragma experimental ABIEncoderV2;
 
-import './LibMath.sol';
-import './FieldP384.sol';
-import './FieldO384.sol';
+import "./LibMath.sol";
+import "./FieldP384.sol";
+import "./FieldO384.sol";
 
 // NIST-P384 / secp384r1 curve
 contract Curve384 is FieldP384, FieldO384 {
