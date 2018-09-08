@@ -78,7 +78,7 @@ contract FieldP384 {
         public view
         returns (uint256 hi, uint256 lo)
     {
-        // 337 865 gas
+        // 122 141 gas
         uint256 r0;
         uint256 r1;
         uint256 r2;
