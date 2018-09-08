@@ -1,5 +1,5 @@
-var Index = artifacts.require("./Index.sol");
+var Wallet = artifacts.require("./Wallet.sol");
 
-contract("Index", function(accounts) {
+contract("Wallet", function(accounts) {
   it("", function() {});
 });

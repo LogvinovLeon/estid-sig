@@ -1,5 +1,5 @@
-var Index = artifacts.require("./Index.sol");
+var Wallet = artifacts.require("./Wallet.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Index);
+  deployer.deploy(Wallet);
 };
