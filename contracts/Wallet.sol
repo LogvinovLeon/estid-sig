@@ -7,7 +7,7 @@ contract Wallet is Curve384 {
     uint256 Pxhi;
     uint256 Pylo;
     uint256 Pyhi;
-    constructor(uint256 _Pxlo, uint256 _Pxhi, uint256 _Pylo, uint256 _Pyhi)
+    constructor(uint256 _Pxhi, uint256 _Pxlo, uint256 _Pyhi, uint256 _Pylo)
         public
     {
         Pxlo = _Pxlo;
