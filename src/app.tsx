@@ -76,17 +76,17 @@ export class App extends React.Component<{}, State> {
           return;
         }
         // SIG
-        // const signature = await hw.sign(
-        //   cert,
-        //   {
-        //     type: "SHA-256",
-        //     hex: hash
-        //   },
-        //   { lang: "en" }
-        // );
-        // const sigHex = signature.hex;
-        const sigHex =
-          "C884ECC7CA1B5E353ECEF4FBE46AC5719731F3E9A6B0305C36E0731C37F43FBA2585578B76B71BE6072227CED0FBF56EA724BF43B56352DB2EE316666E7E98C7E0ABBDA481B91A7050FC91F7500BA6E91E319006A4E40790F80A42A30618FBFB";
+        const signature = await hw.sign(
+          cert,
+          {
+            type: "SHA-256",
+            hex: hash
+          },
+          { lang: "en" }
+        );
+        const sigHex = signature.hex;
+        // const sigHex =
+        //   "C884ECC7CA1B5E353ECEF4FBE46AC5719731F3E9A6B0305C36E0731C37F43FBA2585578B76B71BE6072227CED0FBF56EA724BF43B56352DB2EE316666E7E98C7E0ABBDA481B91A7050FC91F7500BA6E91E319006A4E40790F80A42A30618FBFB";
         const sigPoint = hexToPoint(sigHex);
         const r = sigPoint.x;
         const s = sigPoint.y;
