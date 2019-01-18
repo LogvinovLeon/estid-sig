@@ -6,7 +6,7 @@ Can we sign Ethereum transactions with it? After today, YES!
 
 The best part: It is completely trustless! There is no server. Just a static page. All verification happens on-chain. It can become a simple library that can be integrated in DApps and Wallets. The root of trust is the Estonian government.
 
-When you loose your card, you can get a new one at the Esonian embassy. The wallet contract automatically accepts your new card, since the wallet is tied to your citizen id, and the certificate is signed by the Estonian government. The root of trust is the CA root key of the Estonian government.
+When you loose your card, you can get a new one at the Estonian embassy. The wallet contract automatically accepts your new card, since the wallet is tied to your citizen id, and the certificate is signed by the Estonian government. The root of trust is the CA root key of the Estonian government.
 
 ## What it does
 
